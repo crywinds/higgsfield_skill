@@ -1,0 +1,7 @@
+# 記錄的 Prompts 範例（每行一則）
+# 複製此檔為 prompts.txt 並填入要投放的提示詞，供 OpenClaw bot 依序產生圖片。
+# 執行前請確認已啟用 Unlimited，避免消耗網站 Credit。
+
+A serene landscape with mountains and a lake at sunset.
+Portrait from waist up, soft lighting, professional style.
+A futuristic city with flying vehicles at night.
