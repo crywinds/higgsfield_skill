@@ -16,6 +16,53 @@ metadata: {"openclaw":{"requires":{"config":["browser.enabled"]},"emoji":"🍌"}
 
 ---
 
+## Higgsfield 網頁操作細節（必讀）
+
+在 Higgsfield 頁面上產生圖片時，必須依**固定順序**操作以下三個目標元素。網站可能使用隨機 class 或 ID 防機器人，因此**一律用語意方式辨識**（role、name、placeholder、可見文字），不要依賴 class 或動態 ID；snapshot 後用描述比對 ref 再操作。
+
+### 1. 將 Prompt 貼到輸入框
+
+- **目標**：多行文字輸入框（textarea），用於輸入場景描述。
+- **辨識方式**（任一種符合即可）：
+  - `name="prompt"` 的輸入框；
+  - 或 placeholder 為 **"Describe the scene you imagine"** 的 textarea；
+  - 或 snapshot 中角色為 textbox、且標籤/placeholder 與「場景描述」相關的那一個。
+- **操作**：對該 ref 使用 `type`（或 `fill`）將當前要產生的 **prompt 全文**貼上；必要時先清空再輸入。不要依賴該元素的 class 或隨機屬性。
+
+### 2. 開啟 Unlimited 開關（必須為 ON）
+
+- **目標**：一個**切換開關**（switch），控制是否使用 Unlimited 方案。若為關閉狀態，會消耗網站 Credit。
+- **辨識方式**：
+  - 角色為 **switch**（`role="switch"`）的按鈕；
+  - 若 snapshot 顯示 `aria-checked="false"` 或「off」/「未選中」，表示尚未開啟，**必須點擊一次**使其變為 `aria-checked="true"`（ON）。
+- **操作**：在 snapshot 中找到對應該 switch 的 ref，執行 `click`。若 snapshot 顯示已為「on」/「checked」可略過；否則**每次產生前都先確認此開關為開啟**。
+
+### 3. 點擊「Unlimited」按鈕
+
+- **目標**：顯示文字 **"Unlimited"** 的按鈕或可點擊區塊（旁邊可能有小星星/閃光圖示）。這是正式啟用「Unlimited」方案的操作，與上述開關不同。
+- **辨識方式**：
+  - 在 snapshot 中找**可見文字為 "Unlimited"** 的按鈕或連結；
+  - 可能以 "Unlimited" 加上圖示或數字（如 "Unlimited 2"）出現，選主「Unlimited」控制即可。
+- **操作**：對該 ref 執行 `click`。**每次要按 Draw 之前都要先完成此步驟**（連同步驟 2 的開關為 ON）。
+
+### 4. 操作順序與 Draw
+
+在 Higgsfield 上**每次**產生一張圖的建議順序：
+
+1. 在 **prompt 輸入框**（步驟 1）貼上/輸入當前 prompt；
+2. 確認 **Unlimited 開關**（步驟 2）為**開啟**，若為關閉則點擊一次；
+3. 點擊 **"Unlimited"** 按鈕/區塊（步驟 3）；
+4. 點擊 **Draw**（繪製）按鈕開始產生。
+
+### 抗隨機化：如何穩定辨識元素
+
+- 網站可能為防機器人而使用**隨機或動態的 class / ID**，因此：
+  - **不要**依賴 `class`、`id` 或 data 屬性來選元素；
+  - **要**依賴：**role**（如 switch、textbox）、**name**（如 prompt）、**placeholder** 文字（如 "Describe the scene you imagine"）、**可見文字**（如 "Unlimited"、"Draw"）、**aria-checked** 等語意或可訪問性資訊。
+- 每次 `browser snapshot` 後，根據上述描述在 snapshot 輸出中對應到正確的 ref（數字或 role ref 如 e12），再對該 ref 執行 `click` 或 `type`。若一頁有多個相似元素，以「與 prompt 輸入／Unlimited 開關／Unlimited 按鈕」語意最相符者為準。
+
+---
+
 ## 來源 A：從 StarScene Pro 歷史記錄投放
 
 當使用者要求「從 StarScene Pro 歷史記錄投放到 Higgsfield」或「點擊上一個記錄投放」時，依下列流程操作。
@@ -46,9 +93,10 @@ metadata: {"openclaw":{"requires":{"config":["browser.enabled"]},"emoji":"🍌"}
    - 可點擊頁面上的 **「前往 Higgsfield」** 按鈕（橙色）直接跳轉，或 `navigate` 至 `https://higgsfield.ai/image/nano_banana_2`。
    - 若已在 Higgsfield 分頁，可 `focus` 該分頁或新開分頁後再 navigate。
 
-3. **在 Higgsfield 產生這一張圖**
-   - **先啟用 Unlimited**：在 Higgsfield 介面上點擊/切換 **Unlimited**（切換開關或螢光綠 Unlimited 按鈕），確保不消耗 Credit。
-   - 在 **prompt 輸入框**貼上/輸入當前這一條的 prompt。
+3. **在 Higgsfield 產生這一張圖**（嚴格依「Higgsfield 網頁操作細節」一節順序）
+   - 在 **prompt 輸入框**（辨識：name=prompt 或 placeholder "Describe the scene you imagine"）貼上當前這一條的 prompt；
+   - 將 **Unlimited 開關**（role=switch）點擊為**開啟**（aria-checked=true）；
+   - 點擊顯示 **"Unlimited"** 文字的按鈕；
    - 點擊 **Draw** 開始產生。
    - 依需要等待產生完成（可 `snapshot` 或 `wait`），再進行下一條。
 
@@ -74,20 +122,12 @@ metadata: {"openclaw":{"requires":{"config":["browser.enabled"]},"emoji":"🍌"}
    - 使用 `browser` 工具：`navigate` 至 `https://higgsfield.ai/image/nano_banana_2`（或當前官方 nano_banana_2 圖片產生頁面）。
    - 若頁面需載入，可先 `snapshot` 確認介面已出現。
 
-2. **每次產生前：務必啟用 Unlimited**
-   - 在 Higgsfield 介面上會有「Unlimited」相關控制：
-     - **Unlimited 切換/按鈕**：可能是切換開關（toggle）或明顯的「Unlimited」按鈕（例如螢光綠按鈕）。
-   - **每次**要點擊「Draw」產生圖片**之前**，必須先：
-     - 點擊或切換至 **Unlimited**，確保目前使用的是「Unlimited Nano Banana Pro」配額，**而不是**網站的 Credit。
-   - 若 snapshot 中看到多個「Unlimited」元素（例如一個在數量旁、一個較大的主按鈕），優先點擊**明確代表「使用無限方案」**的那一個（常是較大、顯眼的主 Unlimited 按鈕），或將切換開關設為開啟。
-   - 若無法從 snapshot 判斷，則兩個 Unlimited 相關控制都確保為「已選中/已開啟」再進行產生。
+2. **每次產生前：依「Higgsfield 網頁操作細節」操作**
+   - 對每一則 prompt：先將文字貼到 **prompt 輸入框**（name=prompt 或 placeholder "Describe the scene you imagine"）；再將 **Unlimited 開關**（role=switch）點為開啟；再點擊 **"Unlimited"** 按鈕；最後點擊 **Draw**。不可省略或調換順序。
 
 3. **依本機記錄檔投放產生**
    - 從使用者指定或預設的記錄檔（例如 `prompts.txt` 或 `{baseDir}/prompts.txt`）讀取 prompt 列表（每行一則或依約定格式）。
-   - 對**每一則** prompt：
-     - 在 Higgsfield 網頁的 **prompt 輸入框**中填入該則文字（必要時先清空再輸入）。
-     - 再次確認 **Unlimited** 已啟用（若同頁有多個 Unlimited 控制，確保代表「無限方案」者為 ON）。
-     - 點擊 **Draw**（繪製）按鈕開始產生。
+   - 對**每一則** prompt：依上方的「Higgsfield 網頁操作細節」順序操作（輸入框 → Unlimited 開關 ON → Unlimited 按鈕 → Draw），並以 **role/name/placeholder/可見文字** 辨識元素，不依賴 class 或隨機 ID。
      - 依需要等待產生完成（可 `snapshot` 或 `wait` 觀察結果），再進行下一則或下載結果。
 
 4. **可選**
@@ -96,8 +136,8 @@ metadata: {"openclaw":{"requires":{"config":["browser.enabled"]},"emoji":"🍌"}
 
 ## 重要提醒
 
-- **未點擊 Unlimited 就按 Draw，會消耗網站 Credit。** 因此流程中必須把「先啟用 Unlimited」當作固定步驟，不可省略。
-- 若介面改版，以「Unlimited」文字或明顯的無限方案切換/按鈕為準，必要時用 `browser snapshot` 再確認元素位置與 ref，再執行 `click`。
+- **未將 Unlimited 開關開啟並點擊 Unlimited 按鈕就按 Draw，會消耗網站 Credit。** 每次產生前必須依「Higgsfield 網頁操作細節」完成：輸入框 → 開關 ON → Unlimited 按鈕 → Draw。
+- 元素可能帶隨機 class/ID：**只用 role、name、placeholder、可見文字**在 snapshot 中對應 ref，再 `click`/`type`，不要依賴 class 或 id。
 
 ## 本機記錄的 Prompts 來源（來源 B 專用）
 
